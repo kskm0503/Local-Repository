@@ -1,0 +1,110 @@
+Local_Repository 설정
+
+Server 구성 단계
+
+1. ISO 파일 다운로드
+    -  Cent OS 7버전으로 테스트 진행(Everything 파일 다운로드)
+   
+2. 다운로드 한 ISO 파일 서버로 이동(SFTP)
+   - SFTP 로 이동 후 Mount 진행
+   - mount -o loop /root/CentOS-7-x86_64-Everything-1708.iso /mnt
+   
+3.Packages 복사
+  - mkdir /root/local-repo
+  - cp /mnt/Packages /root/local-repo
+ 
+
+4. 신규 Yum repository 작성
+   [repo-server]
+   name=repository server
+   baseurl=file:///loop/local-repo
+   enabled=1
+   gpgcheck=0
+   
+5. 정상 작동여부 확인
+   - yum clean all -> 캐쉬 삭제
+   - yum repolist -> 저장소 여부 확인
+   - yum install telnet -> 로컬 저장소를 이용하여 패키하는 지 확인
+---------------------------------------------------------------------------
+Server http 구성
+
+1. vi /etc/httpd/conf/httpd.conf 파일 수정
+
+DocumentRoot "/loop/local-repo" -> 위에서 설정한 로컬 경로로 설정
+
+<Directory "/loop/local-repo"> -> 경로 
+   Options Indexes FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+
+---------------------------------------------------------------------------
+ 
+Client 구성 단계
+
+1. 기존 Yum 파일 백업 진행
+
+2. 신규 Yum 파일 작성
+   name=repository server
+   baseurl=http://172.16.1.238
+   enabled=1
+   gpgcheck=0
+   
+3.  정상 작동여부 확인
+   - yum clean all -> 캐쉬 삭제
+   - yum repolist -> 저장소 여부 확인
+   - yum install telnet -> 로컬 저장소를 이용하여 패키하는 지 확인
+   
+-------------------------------------------------------------------------
+
+
+
+httpd  연동 수정한 부분
+
+vi /etc/httpd/conf/httpd.conf 파일 수정
+
+DocumentRoot "/loop/local-repo"
+
+<Directory "/loop/local-repo">
+   Options Indexes FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+#
+# Further relax access to the default document root:
+<Directory "/loop/local-repo">
+    #
+    # Possible values for the Options directive are "None", "All",
+    # or any combination of:
+    #   Indexes Includes FollowSymLinks SymLinksifOwnerMatch ExecCGI MultiViews
+    #
+    # Note that "MultiViews" must be named *explicitly* --- "Options All"
+    # doesn't give it to you.
+    #
+    # The Options directive is both complicated and important.  Please see
+    # http://httpd.apache.org/docs/2.4/mod/core.html#options
+    # for more information.
+    #
+    Options Indexes FollowSymLinks
+    #
+    # AllowOverride controls what directives may be placed in .htaccess files.
+    # It can be "All", "None", or any combination of the keywords:
+    #   Options FileInfo AuthConfig Limit
+    #
+    AllowOverride None
+
+    #
+    # Controls who can get stuff from this server.
+    #
+    Require all granted
+
+<IfModule dir_module>
+    DirectoryIndex /loop/local-repo
+</IfModule>
+
+   
+
+
+
+   
+   
